@@ -1,63 +1,64 @@
-# Welcome to your Grupo06 project
+# Controle de Estoque Grupo06 — Iteração 2
 
-## Project info
+Aplicação web desenvolvida em React + Vite para apoiar o Grupo06 na gestão de estoque com autenticação simulada, dashboards, cadastro de produtos, movimentações e relatórios. Esta versão corresponde à Iteração 2 e está pronta para execução local ou publicação em qualquer provedor de hospedagem de SPAs.
 
-This repository hosts the Grupo06 inventory control experience. It ships with the full Vite + React toolchain, so you can work locally with the stack you already know.
+## Tecnologias principais
 
-## How can I edit this code?
+- React 18 com TypeScript
+- Vite 5
+- Tailwind CSS + shadcn/ui
+- React Router DOM
+- TanStack Query
 
-There are several ways of editing your application.
+## Pré-requisitos
 
-**Use your preferred IDE**
+- **Node.js** 18 LTS ou superior (recomendo instalar via [nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
+- **npm** 10 ou superior (já acompanha a instalação do Node)
+- Git para clonar o repositório
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected for the rest of the Grupo06 team.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Verifique as versões:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+node -v
+npm -v
 ```
 
-**Edit a file directly in GitHub**
+## Como executar no computador pessoal
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Clone o repositório:
+   ```sh
+   git clone https://github.com/Pyettro/controle-estok.git
+   cd controle-estok/controle-estok
+   ```
+2. Instale as dependências:
+   ```sh
+   npm install
+   ```
+3. Inicie o servidor de desenvolvimento:
+   ```sh
+   npm run dev
+   ```
+4. Abra o endereço informado pelo Vite (por padrão http://localhost:5173) no navegador.
 
-**Use GitHub Codespaces**
+> Não há variáveis de ambiente obrigatórias nesta iteração. Toda a camada de dados usa mocks locais.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Scripts disponíveis
 
-## What technologies are used for this project?
+- `npm run dev` — sobe o ambiente de desenvolvimento com hot-reload.
+- `npm run build` — gera a build de produção dentro de `dist`.
+- `npm run preview` — executa localmente a build já gerada para validação.
+- `npm run lint` — roda o ESLint nos arquivos TypeScript/TSX.
 
-This project is built with:
+## Estrutura relevante
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `src/pages` — telas da aplicação (Login, Dashboard, Produtos, Movimentações, Relatórios e 404).
+- `src/components` — componentes reutilizáveis e wrappers do shadcn/ui.
+- `src/lib` e `src/hooks` — utilitários, toasts e integrações.
 
-## How can I deploy this project?
+## Como publicar em produção
 
-Run your preferred deployment workflow (Vercel, Netlify, Render, etc.) against the production build generated with `npm run build`. The Grupo06 team can then share the resulting URL.
+1. Gere a build otimizada: `npm run build`.
+2. Faça o deploy do conteúdo da pasta `dist` em um provedor como Vercel, Netlify, Render ou GitHub Pages.
+3. Caso utilize domínio próprio, aponte seus registros DNS para o provedor escolhido.
 
-## Can I connect a custom domain to my Grupo06 project?
-
-Yes, you can! Configure your hosting provider with the desired domain and point the DNS records to the deployment that serves this repository.
+Com esses passos, qualquer desenvolvedor consegue reproduzir e evoluir a Iteração 2 do Controle de Estoque Grupo06.
