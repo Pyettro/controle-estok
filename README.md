@@ -1,22 +1,16 @@
-# Welcome to your Lovable project
+# Welcome to your Grupo06 project
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/d46d7612-a205-43aa-bd7e-e627cb461122
+This repository hosts the Grupo06 inventory control experience. It ships with the full Vite + React toolchain, so you can work locally with the stack you already know.
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/d46d7612-a205-43aa-bd7e-e627cb461122) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected for the rest of the Grupo06 team.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,12 +56,8 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/d46d7612-a205-43aa-bd7e-e627cb461122) and click on Share -> Publish.
+Run your preferred deployment workflow (Vercel, Netlify, Render, etc.) against the production build generated with `npm run build`. The Grupo06 team can then share the resulting URL.
 
-## Can I connect a custom domain to my Lovable project?
+## Can I connect a custom domain to my Grupo06 project?
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Yes, you can! Configure your hosting provider with the desired domain and point the DNS records to the deployment that serves this repository.
