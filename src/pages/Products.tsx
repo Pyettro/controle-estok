@@ -13,7 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateProductMutation, useProductsQuery } from "@/hooks/useProducts";
+import {
+  useCreateProductMutation,
+  useDeleteProductMutation,
+  useProductsQuery,
+  useUpdateProductMutation,
+} from "@/hooks/useProducts";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -27,6 +32,9 @@ const Products = () => {
 
   const { data: products = [], isLoading } = useProductsQuery();
   const createProduct = useCreateProductMutation();
+  const updateProduct = useUpdateProductMutation();
+  const deleteProduct = useDeleteProductMutation();
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,19 +48,27 @@ const Products = () => {
       return;
     }
 
-    createProduct.mutate(
-      {
-        name: formData.name,
-        category: formData.category,
-        supplier: formData.supplier,
-        quantity: Number(formData.quantity),
-        minQuantity: Number(formData.minQuantity || 0),
-      },
+    const payload = {
+      name: formData.name,
+      category: formData.category,
+      supplier: formData.supplier,
+      quantity: Number(formData.quantity),
+      minQuantity: Number(formData.minQuantity || 0),
+    };
+
+    const isEditing = Boolean(editingId);
+
+    const mutation = isEditing
+      ? updateProduct.mutate
+      : createProduct.mutate;
+
+    mutation(
+      isEditing ? { id: editingId!, input: payload } : payload,
       {
         onSuccess: () => {
           toast({
-            title: "Produto cadastrado com sucesso!",
-            description: `${formData.name} foi adicionado ao estoque.`,
+            title: isEditing ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!",
+            description: `${formData.name} ${isEditing ? "foi atualizado" : "foi adicionado ao estoque"}.`,
           });
           setFormData({
             name: "",
@@ -61,11 +77,12 @@ const Products = () => {
             quantity: "",
             minQuantity: "",
           });
+          setEditingId(null);
         },
         onError: (error) => {
-          const message = error instanceof Error ? error.message : "Erro ao cadastrar produto.";
+          const message = error instanceof Error ? error.message : "Erro ao salvar produto.";
           toast({
-            title: "Erro ao cadastrar",
+            title: "Erro ao salvar",
             description: message,
             variant: "destructive",
           });
@@ -79,6 +96,53 @@ const Products = () => {
     if (!products.length) return "Nenhum produto ainda";
     return `${products.length} produto${products.length > 1 ? "s" : ""} cadastrados`;
   }, [isLoading, products]);
+
+  const handleEdit = (id: string) => {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+    setEditingId(id);
+    setFormData({
+      name: product.name,
+      category: product.category,
+      supplier: product.supplier,
+      quantity: String(product.quantity),
+      minQuantity: String(product.minQuantity ?? ""),
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+    const confirmed = window.confirm(`Deseja realmente excluir "${product.name}"?`);
+    if (!confirmed) return;
+
+    deleteProduct.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: "Produto excluído",
+          description: `"${product.name}" foi removido.`,
+        });
+        if (editingId === id) {
+          setEditingId(null);
+          setFormData({
+            name: "",
+            category: "",
+            supplier: "",
+            quantity: "",
+            minQuantity: "",
+          });
+        }
+      },
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : "Erro ao excluir produto.";
+        toast({
+          title: "Erro ao excluir",
+          description: message,
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
@@ -199,8 +263,8 @@ const Products = () => {
           <CardHeader>
             <CardTitle>Produtos cadastrados</CardTitle>
             <CardDescription>{productCountCopy}</CardDescription>
-          </CardHeader>
-          <CardContent>
+            </CardHeader>
+            <CardContent>
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
@@ -209,19 +273,20 @@ const Products = () => {
                     <th className="text-left py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Categoria</th>
                     <th className="text-left py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Fornecedor</th>
                     <th className="text-right py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Qtd</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading && (
                     <tr>
-                      <td className="py-3 px-3 text-muted-foreground" colSpan={4}>
+                      <td className="py-3 px-3 text-muted-foreground" colSpan={5}>
                         Carregando produtos...
                       </td>
                     </tr>
                   )}
                   {!isLoading && products.length === 0 && (
                     <tr>
-                      <td className="py-3 px-3 text-muted-foreground" colSpan={4}>
+                      <td className="py-3 px-3 text-muted-foreground" colSpan={5}>
                         Você ainda não adicionou produtos.
                       </td>
                     </tr>
@@ -232,6 +297,25 @@ const Products = () => {
                       <td className="py-3 px-3 text-muted-foreground">{product.category}</td>
                       <td className="py-3 px-3 text-muted-foreground">{product.supplier}</td>
                       <td className="py-3 px-3 text-right font-semibold">{product.quantity}</td>
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2 justify-center">
+                          <Button
+                            size="sm"
+                            variant={editingId === product.id ? "secondary" : "outline"}
+                            onClick={() => handleEdit(product.id)}
+                          >
+                            {editingId === product.id ? "Editando" : "Editar"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(product.id)}
+                            disabled={deleteProduct.isPending}
+                          >
+                            Excluir
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

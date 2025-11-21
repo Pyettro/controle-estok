@@ -58,6 +58,31 @@ export const mockCreateProduct = async (input: ProductInput) => {
   return withDelay(newProduct);
 };
 
+export const mockUpdateProduct = async (id: string, input: ProductInput) => {
+  const products = readFromStorage<Product[]>(PRODUCTS_KEY, defaultProducts);
+  const idx = products.findIndex((p) => p.id === id);
+
+  if (idx === -1) {
+    throw new Error("Produto não encontrado.");
+  }
+
+  products[idx] = { ...products[idx], ...input };
+  persistToStorage(PRODUCTS_KEY, products);
+
+  return withDelay(products[idx]);
+};
+
+export const mockDeleteProduct = async (id: string) => {
+  const products = readFromStorage<Product[]>(PRODUCTS_KEY, defaultProducts);
+  const filtered = products.filter((p) => p.id !== id);
+  if (filtered.length === products.length) {
+    throw new Error("Produto não encontrado.");
+  }
+  persistToStorage(PRODUCTS_KEY, filtered);
+
+  return withDelay({ success: true });
+};
+
 export const mockGetMovements = async () => {
   const movements = readFromStorage<Movement[]>(MOVEMENTS_KEY, defaultMovements);
   // ensure sorted by newest
