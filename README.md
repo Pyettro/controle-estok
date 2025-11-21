@@ -2,6 +2,17 @@
 
 Aplicação web em React + Vite para gestão de estoque com autenticação simulada, cadastro de produtos, movimentações, relatórios e dashboards. Usa shadcn-ui e React Query.
 
+## Acesso rápido
+- **Aplicação (GitHub Pages)**: https://pyettro.github.io/controle-estok/
+- **Demonstração em vídeo**: https://youtu.be/CoKFgtrEoWI
+
+## Autores
+- Aline Pelegrino Soglia
+- Barbara Miranda Nalon
+- Gusthavo Ramos de Paula
+- Pyettro Ziroldo
+- Talita Ozaki Bearzotti
+
 ## Tecnologias principais
 - React 18 + TypeScript
 - Vite 5 (build ajustado para GitHub Pages em `docs/`)
