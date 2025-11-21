@@ -1,58 +1,46 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Package, TrendingUp, TrendingDown, AlertCircle, LogOut, Plus, FileText } from "lucide-react";
+import { useProductsQuery } from "@/hooks/useProducts";
+import { useMovementsQuery } from "@/hooks/useMovements";
+import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "@/hooks/use-toast";
-
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  supplier: string;
-  quantity: number;
-  minQuantity: number;
-}
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [lowStockCount, setLowStockCount] = useState(0);
+  const { logout, userEmail } = useAuth();
+  const { data: products = [], isLoading: loadingProducts } = useProductsQuery();
+  const { data: movements = [], isLoading: loadingMovements } = useMovementsQuery();
 
-  useEffect(() => {
-    const isAuth = localStorage.getItem("isAuthenticated");
-    if (!isAuth) {
-      navigate("/login");
-      return;
-    }
+  const totalProducts = useMemo(
+    () => products.reduce((acc, p) => acc + p.quantity, 0),
+    [products],
+  );
 
-    // Dados simulados
-    const mockProducts: Product[] = [
-      { id: 1, name: "Notebook Dell", category: "Eletrônicos", supplier: "Dell Inc.", quantity: 15, minQuantity: 5 },
-      { id: 2, name: "Mouse Logitech", category: "Periféricos", supplier: "Logitech", quantity: 3, minQuantity: 10 },
-      { id: 3, name: "Teclado Mecânico", category: "Periféricos", supplier: "Redragon", quantity: 25, minQuantity: 10 },
-      { id: 4, name: "Monitor LG 27''", category: "Eletrônicos", supplier: "LG", quantity: 8, minQuantity: 5 },
-      { id: 5, name: "Cadeira Gamer", category: "Mobiliário", supplier: "DT3 Sports", quantity: 2, minQuantity: 5 },
-    ];
+  const lowStockCount = useMemo(
+    () => products.filter((p) => p.quantity < p.minQuantity).length,
+    [products],
+  );
 
-    setProducts(mockProducts);
-    setTotalProducts(mockProducts.reduce((acc, p) => acc + p.quantity, 0));
-    setLowStockCount(mockProducts.filter(p => p.quantity < p.minQuantity).length);
-  }, [navigate]);
+  const productEntries = useMemo(
+    () => movements.filter((m) => m.type === "entrada").reduce((acc, m) => acc + m.quantity, 0),
+    [movements],
+  );
+  const productExits = useMemo(
+    () => movements.filter((m) => m.type === "saida").reduce((acc, m) => acc + m.quantity, 0),
+    [movements],
+  );
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userEmail");
+    logout();
     toast({
       title: "Logout realizado",
       description: "Até logo!",
     });
     navigate("/login");
   };
-
-  const productEntries = 12;
-  const productExits = 8;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
@@ -68,10 +56,13 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Gestão Inteligente de Inventário</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex items-center gap-3">
+            {userEmail && <span className="text-sm text-muted-foreground hidden sm:inline">{userEmail}</span>}
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -85,7 +76,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
-                <span className="text-3xl font-bold">{totalProducts}</span>
+                <span className="text-3xl font-bold">{loadingProducts ? "..." : totalProducts}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">unidades em estoque</p>
             </CardContent>
@@ -98,7 +89,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-success" />
-                <span className="text-3xl font-bold text-success">{productEntries}</span>
+                <span className="text-3xl font-bold text-success">{loadingMovements ? "..." : productEntries}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">movimentações este mês</p>
             </CardContent>
@@ -111,7 +102,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <TrendingDown className="h-5 w-5 text-destructive" />
-                <span className="text-3xl font-bold text-destructive">{productExits}</span>
+                <span className="text-3xl font-bold text-destructive">{loadingMovements ? "..." : productExits}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">movimentações este mês</p>
             </CardContent>
@@ -124,7 +115,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-warning" />
-                <span className="text-3xl font-bold text-warning">{lowStockCount}</span>
+                <span className="text-3xl font-bold text-warning">{loadingProducts ? "..." : lowStockCount}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">produtos precisam reposição</p>
             </CardContent>
@@ -182,7 +173,21 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product) => (
+                  {loadingProducts && (
+                    <tr>
+                      <td className="py-4 px-4 text-muted-foreground" colSpan={5}>
+                        Carregando produtos...
+                      </td>
+                    </tr>
+                  )}
+                  {!loadingProducts && products.length === 0 && (
+                    <tr>
+                      <td className="py-4 px-4 text-muted-foreground" colSpan={5}>
+                        Nenhum produto cadastrado ainda.
+                      </td>
+                    </tr>
+                  )}
+                  {!loadingProducts && products.map((product) => (
                     <tr key={product.id} className="border-b hover:bg-muted/50 transition-colors">
                       <td className="py-3 px-4">{product.name}</td>
                       <td className="py-3 px-4 text-muted-foreground">{product.category}</td>

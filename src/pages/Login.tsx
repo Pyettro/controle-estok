@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "@/hooks/use-toast";
 import { Package } from "lucide-react";
 
@@ -11,14 +12,20 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { isAuthenticated, login } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Simulação de autenticação
     if (email && password) {
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userEmail", email);
+      login(email);
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo ao sistema de controle de estoque.",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useProductsQuery } from "@/hooks/useProducts";
+import { useCreateMovementMutation, useMovementsQuery } from "@/hooks/useMovements";
 
 const Movements = () => {
   const navigate = useNavigate();
@@ -24,13 +26,9 @@ const Movements = () => {
     reason: "",
   });
 
-  const products = [
-    "Notebook Dell",
-    "Mouse Logitech",
-    "Teclado Mecânico",
-    "Monitor LG 27''",
-    "Cadeira Gamer",
-  ];
+  const { data: products = [], isLoading: loadingProducts } = useProductsQuery();
+  const { data: movements = [], isLoading: loadingMovements } = useMovementsQuery();
+  const createMovement = useCreateMovementMutation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,25 +42,46 @@ const Movements = () => {
       return;
     }
 
-    const isEntry = formData.type === "entrada";
-    toast({
-      title: "Movimentação registrada!",
-      description: `${formData.type === "entrada" ? "Entrada" : "Saída"} de ${formData.quantity} unidades registrada com sucesso.`,
-      variant: isEntry ? "default" : "default",
-    });
-
-    setFormData({
-      product: "",
-      type: "",
-      quantity: "",
-      reason: "",
-    });
+    createMovement.mutate(
+      {
+        productId: formData.product,
+        type: formData.type as "entrada" | "saida",
+        quantity: Number(formData.quantity),
+        reason: formData.reason,
+      },
+      {
+        onSuccess: () => {
+          const isEntry = formData.type === "entrada";
+          toast({
+            title: "Movimentação registrada!",
+            description: `${formData.type === "entrada" ? "Entrada" : "Saída"} de ${formData.quantity} unidades registrada com sucesso.`,
+            variant: isEntry ? "default" : "default",
+          });
+          setFormData({
+            product: "",
+            type: "",
+            quantity: "",
+            reason: "",
+          });
+        },
+        onError: (error) => {
+          const message = error instanceof Error ? error.message : "Erro ao registrar movimentação.";
+          toast({
+            title: "Erro ao registrar",
+            description: message,
+            variant: "destructive",
+          });
+        },
+      },
+    );
   };
+
+  const recentMovements = useMemo(() => movements.slice(0, 5), [movements]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
       <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="container mx-auto px-4 py-4 flex flex-col gap-4 sm:flex-row sm:items-center">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
@@ -94,14 +113,15 @@ const Movements = () => {
                 <Select
                   value={formData.product}
                   onValueChange={(value) => setFormData({ ...formData, product: value })}
+                  disabled={loadingProducts || !products.length}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um produto" />
                   </SelectTrigger>
                   <SelectContent>
                     {products.map((product) => (
-                      <SelectItem key={product} value={product}>
-                        {product}
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -148,15 +168,15 @@ const Movements = () => {
                 />
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1">
+              <div className="flex flex-col gap-4 pt-4 sm:flex-row">
+                <Button type="submit" className="w-full sm:flex-1" disabled={createMovement.isPending}>
                   Registrar Movimentação
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/dashboard")}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   Cancelar
                 </Button>
@@ -173,23 +193,33 @@ const Movements = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { product: "Notebook Dell", type: "entrada", qty: 5, date: "15/10/2025" },
-                { product: "Mouse Logitech", type: "saida", qty: 3, date: "14/10/2025" },
-                { product: "Monitor LG 27''", type: "entrada", qty: 2, date: "12/10/2025" },
-              ].map((movement, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+              {loadingMovements && (
+                <p className="text-sm text-muted-foreground">Carregando movimentações...</p>
+              )}
+              {!loadingMovements && recentMovements.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhuma movimentação registrada.</p>
+              )}
+              {!loadingMovements && recentMovements.map((movement) => (
+                <div key={movement.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
-                    <p className="font-medium">{movement.product}</p>
-                    <p className="text-sm text-muted-foreground">{movement.date}</p>
+                    <p className="font-medium">{movement.productName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(movement.date).toLocaleDateString("pt-BR")}
+                    </p>
+                    {movement.reason && (
+                      <p className="text-xs text-muted-foreground mt-1">Motivo: {movement.reason}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      movement.type === "entrada" 
-                        ? "bg-success/10 text-success" 
-                        : "bg-destructive/10 text-destructive"
-                    }`}>
-                      {movement.type === "entrada" ? "+" : "-"}{movement.qty}
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        movement.type === "entrada"
+                          ? "bg-success/10 text-success"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {movement.type === "entrada" ? "+" : "-"}
+                      {movement.quantity}
                     </span>
                   </div>
                 </div>

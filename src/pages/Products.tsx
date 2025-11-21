@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCreateProductMutation, useProductsQuery } from "@/hooks/useProducts";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -23,6 +24,9 @@ const Products = () => {
     quantity: "",
     minQuantity: "",
   });
+
+  const { data: products = [], isLoading } = useProductsQuery();
+  const createProduct = useCreateProductMutation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,25 +40,50 @@ const Products = () => {
       return;
     }
 
-    toast({
-      title: "Produto cadastrado com sucesso!",
-      description: `${formData.name} foi adicionado ao estoque.`,
-    });
-
-    // Limpar formulário
-    setFormData({
-      name: "",
-      category: "",
-      supplier: "",
-      quantity: "",
-      minQuantity: "",
-    });
+    createProduct.mutate(
+      {
+        name: formData.name,
+        category: formData.category,
+        supplier: formData.supplier,
+        quantity: Number(formData.quantity),
+        minQuantity: Number(formData.minQuantity || 0),
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Produto cadastrado com sucesso!",
+            description: `${formData.name} foi adicionado ao estoque.`,
+          });
+          setFormData({
+            name: "",
+            category: "",
+            supplier: "",
+            quantity: "",
+            minQuantity: "",
+          });
+        },
+        onError: (error) => {
+          const message = error instanceof Error ? error.message : "Erro ao cadastrar produto.";
+          toast({
+            title: "Erro ao cadastrar",
+            description: message,
+            variant: "destructive",
+          });
+        },
+      },
+    );
   };
+
+  const productCountCopy = useMemo(() => {
+    if (isLoading) return "Carregando lista...";
+    if (!products.length) return "Nenhum produto ainda";
+    return `${products.length} produto${products.length > 1 ? "s" : ""} cadastrados`;
+  }, [isLoading, products]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
       <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
+        <div className="container mx-auto px-4 py-4 flex flex-col gap-4 sm:flex-row sm:items-center">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
@@ -122,7 +151,7 @@ const Products = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="quantity">Quantidade Inicial *</Label>
                   <Input
@@ -149,20 +178,65 @@ const Products = () => {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1">
+              <div className="flex flex-col gap-4 pt-4 sm:flex-row">
+                <Button type="submit" className="w-full sm:flex-1" disabled={createProduct.isPending}>
                   Cadastrar Produto
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/dashboard")}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   Cancelar
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg mt-6">
+          <CardHeader>
+            <CardTitle>Produtos cadastrados</CardTitle>
+            <CardDescription>{productCountCopy}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Produto</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Categoria</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Fornecedor</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Qtd</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading && (
+                    <tr>
+                      <td className="py-3 px-3 text-muted-foreground" colSpan={4}>
+                        Carregando produtos...
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && products.length === 0 && (
+                    <tr>
+                      <td className="py-3 px-3 text-muted-foreground" colSpan={4}>
+                        Você ainda não adicionou produtos.
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && products.map((product) => (
+                    <tr key={product.id} className="border-b last:border-0">
+                      <td className="py-3 px-3">{product.name}</td>
+                      <td className="py-3 px-3 text-muted-foreground">{product.category}</td>
+                      <td className="py-3 px-3 text-muted-foreground">{product.supplier}</td>
+                      <td className="py-3 px-3 text-right font-semibold">{product.quantity}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       </main>
